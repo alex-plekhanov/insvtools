@@ -1,53 +1,132 @@
 package org.insvtools;
 
-import org.insvtools.frames.FrameHeader;
+import org.insvtools.commands.*;
+import org.insvtools.logger.Logger;
+import org.insvtools.logger.LoggerFactory;
 
-import java.io.RandomAccessFile;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class InsvTools {
-    public static final String INSV_EXTENSION = ".insv";
+    private static final Logger logger = LoggerFactory.getLogger(InsvTools.class);
 
-    public static void main(String[] args) throws Exception {
-        if (args.length < 1)
-            throw new Exception("Usage: insvtools filename");
+    public static void main(String... args) throws Exception {
+        String ver = InsvTools.class.getPackage().getImplementationVersion();
+        if (args.length < 2) {
+            System.out.println("InsvTools v." + ver);
+            System.out.println("Toolkit for working with *.insv (Insta360 cameras) video files");
+            System.out.println("Usage (jar):    java -jar insvtools.jar <cmd> [parameters] <filename>");
+            System.out.println("Usage (native): insvtools <cmd> [parameters] <filename>");
+            System.out.println("Available commands and parameters:");
+            System.out.println("    cut                             - cut the file using start time and/or end time");
+            System.out.println("        [--start-time=<time>]       - start time in format [MM:]SS[.SSS]");
+            System.out.println("        [--end-time=<time>]         - end time in format [MM:]SS[.SSS]");
+            System.out.println("        [--group=<true/false>]      - process the whole group of files related to specified file (true by default)");
+            System.out.println("        [--out-file=<filename>]     - use specified output file (by default 'cut' suffix will be added to the original file name)");
+            System.out.println();
+            System.out.println("    dump-meta                       - dump insv file metadata");
+            System.out.println("        [--frame-type=<frame-type>] - dump only specified integer frame type (by default all frames will be dumped)");
+            System.out.println("        [--dump-file=<filename>]    - dump file name (by default 'meta.json' suffix will be added to the original file name)");
+            System.out.println();
+            System.out.println("    decompose-meta                  - store insv file metadata to file-per-frame");
+            System.out.println("        [--frame-type=<frame-type>] - store only specified integer frame type (by default all frames will be stored)");
+            System.out.println();
+            System.out.println("    compose-meta                    - compose file-per-frame metadata to the insv file");
+            System.out.println();
+            System.out.println("    remove-meta                     - remove insv file metadata");
+            System.out.println();
+            System.out.println("    extract-meta                    - extract insv file metadata as one file");
+            System.out.println("        [--meta-file=<filename>]    - metadata file name (by default 'meta' suffix will be added to the original file name)");
+            System.out.println();
+            System.out.println("    replace-meta                    - replace insv file metadata with another from file");
+            System.out.println("        [--meta-file=<filename>]    - metadata file name (by default 'meta' suffix will be added to the original file name)");
+            return;
+        }
 
-        parseMetaData(args[0]);
+        Map<String, String> parameters = new HashMap<>();
+
+        String cmdName = args[0];
+        String fileName = args[args.length - 1];
+
+        for (int i = 1; i < args.length - 1; i++) {
+            if (args[i].contains("=")) {
+                String[] pair = args[i].split("=", 2);
+                parameters.put(pair[0], pair[1]);
+            }
+            else {
+                parameters.put(args[i], "true");
+            }
+        }
+
+        Command cmd = null;
+
+        try {
+            if (cmdName.equals("dump-meta")) {
+                String frameType = parameters.remove("--frame-type");
+                String dumpFileName = parameters.remove("--dump-file");
+                cmd = new MetaDumpCommand(fileName, frameType == null ? 0 : Integer.parseInt(frameType), dumpFileName);
+            } else if (cmdName.equals("decompose-meta")) {
+                String frameType = parameters.remove("--frame-type");
+                cmd = new MetaDecomposeCommand(fileName, frameType == null ? 0 : Integer.parseInt(frameType));
+            } else if (cmdName.equals("compose-meta")) {
+                cmd = new MetaComposeCommand(fileName);
+            } else if (cmdName.equals("remove-meta")) {
+                cmd = new MetaRemoveCommand(fileName);
+            } else if (cmdName.equals("extract-meta")) {
+                String metaFileName = parameters.remove("--meta-file");
+                cmd = new MetaExtractCommand(fileName, metaFileName);
+            } else if (cmdName.equals("replace-meta")) {
+                String metaFileName = parameters.remove("--meta-file");
+                cmd = new MetaReplaceCommand(fileName, metaFileName);
+            } else if (cmdName.equals("cut")) {
+                String startTime = parameters.remove("--start-time");
+                String endTime = parameters.remove("--end-time");
+                String groupFlag = parameters.remove("--group");
+                String cutFileName = parameters.remove("--out-file");
+
+                boolean groupOfFiles = groupFlag == null || Boolean.parseBoolean(groupFlag);
+
+                if (startTime == null && endTime == null) {
+                    throw new Exception("At least one parameter (--start-time or --end-time) should be specified");
+                }
+
+                cmd = new CutCommand(fileName, cutFileName, parseTime(startTime), parseTime(endTime), groupOfFiles);
+            }
+
+            if (cmd == null) {
+                throw new Exception("Unknown command " + cmdName);
+            }
+
+            if (!parameters.isEmpty()) {
+                throw new Exception("Unknown parameter(s): " + parameters.keySet());
+            }
+
+            logger.debug("Command line arguments: " + String.join(" ", args));
+            logger.info("InsvTools v." + ver + ", start processing '" + cmdName + "' command");
+            cmd.run();
+            logger.info("Processed successfully");
+        }
+        catch (Exception e) {
+            logger.error("Failure: " + (e.getMessage() == null ? e : e.getMessage()), e);
+        }
     }
 
-    private static void parseMetaData(String fileName) throws Exception {
-        RandomAccessFile file = new RandomAccessFile(fileName, "r");
-        InsvHeader header = new InsvHeader(file);
-        List<FrameHeader> frameHeaders = new ArrayList<>();
+    private static double parseTime(String time) throws Exception {
+        if (time == null)
+            return 0d;
 
-        long startPos = file.length() - header.getMetaDataSize();
+        Pattern pattern = Pattern.compile("((\\d+):)?((\\d+)(\\.\\d+)?)");
+        Matcher matcher = pattern.matcher(time);
 
-        long curPos = file.length() - InsvHeader.HEADER_SIZE;
-
-        while (curPos > startPos) {
-            file.seek(curPos);
-            FrameHeader frameHeader = new FrameHeader(file);
-            frameHeaders.add(frameHeader);
-            curPos = curPos - frameHeader.getFrameSize() - FrameHeader.FRAME_HEADER_SIZE;
+        if (!matcher.matches()) {
+            throw new Exception("Can't parse time " + time);
         }
 
-        String fileNamePrefix = fileName.toLowerCase().endsWith(INSV_EXTENSION.toLowerCase()) ?
-            fileName.substring(0, fileName.length() - INSV_EXTENSION.length()) :
-            fileName;
+        String minutes = matcher.group(2);
+        String seconds = matcher.group(3);
 
-        for (FrameHeader frameHeader : frameHeaders) {
-            String frameFileName = fileNamePrefix + "_frame" + frameHeader.getFrameType() + ".bin";
-
-            RandomAccessFile frameFile = new RandomAccessFile(frameFileName, "rw");
-
-            file.seek(frameHeader.getFramePos());
-            byte[] buf = new byte[frameHeader.getFrameSize()];
-            file.read(buf);
-            frameFile.write(buf);
-            frameFile.close();
-        }
-
-        file.close();
+        return (minutes == null ? 0d : Integer.parseInt(minutes) * 60d) + Double.parseDouble(seconds);
     }
 }

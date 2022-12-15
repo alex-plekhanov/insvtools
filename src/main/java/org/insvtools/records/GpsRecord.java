@@ -3,35 +3,51 @@ package org.insvtools.records;
 import java.nio.ByteBuffer;
 
 public class GpsRecord extends TimestampedRecord {
-    private final double latitude;
-    private final double longitude;
-    private final double altitude;
+    public static final int SIZE = TS_SIZE + 45;
+    private final byte[] payload;
+    private final String description;
 
-    public GpsRecord(long timestamp, double latitude, double longitude, double altitude) {
+    private GpsRecord(long timestamp, byte[] payload, String description) {
         super(timestamp);
-        this.latitude = latitude;
-        this.longitude = longitude;
-        this.altitude = altitude;
+        this.payload = payload;
+        this.description = description;
     }
 
     public static GpsRecord parse(ByteBuffer buf) {
         long timestamp = buf.getLong();
+
+        int pos = buf.position();
+        byte[] payload = new byte[SIZE - TS_SIZE];
+        buf.get(payload);
+
+        buf.position(pos);
+
+        buf.getShort(); // Skip unknown.
+        buf.get(); // Skip unknown.
+
         double latitude = buf.getDouble();
+        char ns = (char)buf.get();
         double longitude = buf.getDouble();
+        char ew = (char)buf.get();
+        double speed = buf.getDouble();
+        double track = buf.getDouble();
         double altitude = buf.getDouble();
 
-        return new GpsRecord(timestamp, latitude, longitude, altitude);
+        String description = "position " + latitude + ns + ' ' + longitude + ew +
+                " speed " + speed +
+                " track " + track +
+                " altitude " + altitude;
+
+        return new GpsRecord(timestamp, payload, description);
     }
 
-    public double getLatitude() {
-        return latitude;
+    @Override
+    public void write(ByteBuffer buf) {
+        super.write(buf);
+        buf.put(payload);
     }
 
-    public double getLongitude() {
-        return longitude;
-    }
-
-    public double getAltitude() {
-        return altitude;
+    public String getDescription() {
+        return description;
     }
 }

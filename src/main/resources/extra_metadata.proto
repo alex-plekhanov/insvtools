@@ -1,0 +1,126 @@
+syntax = "proto3";
+
+option java_package = "org.insvtools.frames";
+option java_outer_classname = "ExtraMetadataProtoBuf";
+
+/**
+ * Some fields are commented, I don't have files with these fields and don't know fields type,
+ * setting the wrong type can lead to serialization/deserialization errors, so it's safer to just
+ * leave this fields commented.
+ * If you have some of these fields in your files and know types of this field, you can change
+ * this file and field names will be printed in the dump.
+ */
+message ExtraMetadata {
+  optional string SerialNumber = 1;
+  optional string CameraType = 2;
+  optional string FwVersion = 3;
+  //unknown FileType = 4;
+  optional string Offset = 5;
+  //unknown Ip = 6;
+  //unknown FileType = 4;
+  //unknown CreationTime = 7;
+  //unknown ExportTime = 8;
+  optional int64 FileSize = 9;
+  optional int32 TotalTime = 10; // In seconds.
+  optional bytes Gps = 11; // double latitude, double longitude, double altitude
+  //unknown Orientation = 12;
+  //unknown UserOptions = 13;
+  optional bytes Gyro = 14;
+  //unknown HdrState = 15;
+  //unknown HdrIdentifier = 16;
+  optional string OriginalOffset = 17;
+  optional int32 TriggerSource = 18;
+  optional Vector2 Dimension = 19;
+  optional int32 FrameRate = 20;
+  //unknown ImageTranslate = 21;
+  optional string GammaMode = 22;
+  //unknown ThumbnailGyroIndex = 23;
+  optional int64 FirstFrameTimestamp = 24; // Micros or millis.
+  optional double RollingShutterTime = 25;
+  optional FileGroupInfoMsg FileGroupInfo = 26;
+  optional WindowCropInfoMsg WindowCropInfo = 27;
+  optional double GyroTimestamp = 28;
+  optional bool IsHasGyroTimestamp = 29;
+  optional int32 TimelapseInterval = 30;
+  optional bytes GyroCalib = 31;
+  //unknown EvoStatusMode = 32;
+  //unknown EvoStatusId = 33;
+  //unknown OriginalOffset3D = 34;
+  //unknown GpsSources = 35;
+  optional int64 FirstGpsTimestamp = 36; // Unix timestamp micros.
+  //unknown OrientationCalib = 37;
+  //unknown IsCollected = 38;
+  //unknown RecycleTime = 39;
+  //unknown TotalFrames = 40;
+  optional bool IsSelfie = 41;
+  optional bool IsFlowstateOnline = 42;
+  optional bool IsDewarp = 43;
+  optional Vector2 ResolutionSize = 44;
+  optional int32 BatteryType = 45;
+  optional int32 CamPosture = 46;
+  optional int32 FovType = 47;
+  optional double Distance = 48;
+  optional double Fov = 49;
+  optional int32 GyroFilterType = 50;
+  optional int32 GyroType = 51;
+  //unknown MediaDataRotateAngel = 52;
+  //unknown OffsetV2 = 53;
+  //unknown OffsetV3 = 54;
+  //unknown OriginalOffsetV2 = 55;
+  //unknown OriginalOffsetV3 = 56;
+  optional int32 FocusSensor = 57;
+  optional int32 ExpectOutputType = 58;
+  //unknown TimelapseIntervalInMillisecond = 59;
+  //unknown PhotoRot = 60;
+  optional int32 AudioMode = 61;
+  optional bool IsRawGyro = 62;
+  optional int32 RawCaptureType = 63;
+  optional int32 PtsType = 64;
+  optional GyroConfigInfo GyroCfgInfo = 65;
+  //unknown Lens283MType1 = 66;
+  //unknown Lens283MType2 = 67;
+
+  message ExtraUserOptions {
+    //unknown Filter = 1;
+    //unknown Befilter = 2;
+    //unknown Euler = 3;
+    //unknown RmPurple = 4;
+    //unknown GyroCalibrateMode = 5;
+    //unknown EulerEnable = 6;
+    //unknown LogoType = 7;
+    //unknown AdjustFilters = 8;
+    //unknown LutFilter = 9;
+    //unknown OffsetConvertStates = 10;
+  }
+
+  message Vector2 {
+    optional int32 X = 1;
+    optional int32 Y = 2;
+  }
+
+  message GyroIndex {
+    //unknown Index = 1;
+    //unknown Timestamp = 2;
+  }
+
+  message FileGroupInfoMsg {
+    optional int32 Type = 1;
+    optional int32 Index = 2;
+    optional bytes Identify = 3;
+    //unknown Total = 4;
+  }
+
+  message WindowCropInfoMsg {
+    optional int32 SrcWidth = 1;
+    optional int32 SrcHeight = 2;
+    optional int32 DstWidth = 3;
+    optional int32 DstHeight = 4;
+    //unknown CropOffsetX = 5;
+    //unknown CropOffsetY = 6;
+  }
+
+  message GyroConfigInfo {
+    optional int64 AccRange = 1;
+    optional int64 GyroRange = 2;
+  }
+}
