@@ -1,7 +1,6 @@
 package org.insvtools.frames;
 
 import org.insvtools.InsvMetadata;
-import org.insvtools.dump.Dumper;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -50,15 +49,15 @@ public class Frame {
 
     private static Frame create(FrameHeader header, ByteBuffer buffer) {
         switch (header.getFrameType()) {
-            case FrameTypes.INFO:
+            case INFO:
                 return new InfoFrame(header, buffer);
-            case FrameTypes.GYRO:
+            case GYRO:
                 return new GyroFrame(header, buffer);
-            case FrameTypes.EXPOSURE:
+            case EXPOSURE:
                 return new ExposureFrame(header, buffer);
-            case FrameTypes.TIMELAPSE:
+            case TIMELAPSE:
                 return new TimelapseFrame(header, buffer);
-            case FrameTypes.GPS:
+            case GPS:
                 return new GpsFrame(header, buffer);
             default:
                 return new Frame(header, buffer);

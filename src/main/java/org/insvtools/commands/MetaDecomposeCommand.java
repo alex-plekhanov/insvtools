@@ -23,11 +23,11 @@ public class MetaDecomposeCommand extends AbstractCommand {
         for (int i = 0; i < metadata.getFrames().size(); i++) {
             Frame frame = metadata.getFrames().get(i);
 
-            if (frameType > 0 && frame.getHeader().getFrameType() != frameType) {
+            if (frameType > 0 && frame.getHeader().getFrameTypeCode() != frameType) {
                 continue;
             }
 
-            StringBuilder typeBuilder = new StringBuilder().append(frame.getHeader().getFrameType());
+            StringBuilder typeBuilder = new StringBuilder().append(frame.getHeader().getFrameTypeCode());
 
             if (frame.getHeader().getFrameVersion() > 0) {
                 typeBuilder.append('_').append(frame.getHeader().getFrameVersion());
@@ -41,7 +41,7 @@ public class MetaDecomposeCommand extends AbstractCommand {
                 throw new Exception("File " + frameFileName + " already exists");
             }
 
-            logger.info("Storing frame (type=" + frame.getHeader().getFrameType() + ",ver=" +
+            logger.info("Storing frame (typeCode=" + frame.getHeader().getFrameTypeCode() + ",ver=" +
                     frame.getHeader().getFrameVersion()  + ") from " + fileName + " to " + frameFileName);
 
             try (RandomAccessFile frameFileHandler = new RandomAccessFile(frameFileName, "rw")) {

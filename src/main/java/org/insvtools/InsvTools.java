@@ -16,13 +16,14 @@ public class InsvTools {
         String ver = InsvTools.class.getPackage().getImplementationVersion();
         if (args.length < 2) {
             System.out.println("InsvTools v." + ver);
-            System.out.println("Toolkit for working with *.insv (Insta360 cameras) video files");
+            System.out.println("Toolkit for working with Insta360 cameras video files");
             System.out.println("Usage (jar):    java -jar insvtools.jar <cmd> [parameters] <filename>");
             System.out.println("Usage (native): insvtools <cmd> [parameters] <filename>");
             System.out.println("Available commands and parameters:");
             System.out.println("    cut                             - cut the file using start time and/or end time");
             System.out.println("        [--start-time=<time>]       - start time in format [MM:]SS[.SSS]");
             System.out.println("        [--end-time=<time>]         - end time in format [MM:]SS[.SSS]");
+            System.out.println("        [--timestamp-scale=<scale>] - Gyro records timestamp scale (autodetect by default)");
             System.out.println("        [--group=<true/false>]      - process the whole group of files related to specified file (true by default)");
             System.out.println("        [--out-file=<filename>]     - use specified output file (by default 'cut' suffix will be added to the original file name)");
             System.out.println();
@@ -45,24 +46,24 @@ public class InsvTools {
             return;
         }
 
-        Map<String, String> parameters = new HashMap<>();
-
-        String cmdName = args[0];
-        String fileName = args[args.length - 1];
-
-        for (int i = 1; i < args.length - 1; i++) {
-            if (args[i].contains("=")) {
-                String[] pair = args[i].split("=", 2);
-                parameters.put(pair[0], pair[1]);
-            }
-            else {
-                parameters.put(args[i], "true");
-            }
-        }
-
-        Command cmd = null;
-
         try {
+            Map<String, String> parameters = new HashMap<>();
+
+            String cmdName = args[0];
+            String fileName = args[args.length - 1];
+
+            for (int i = 1; i < args.length - 1; i++) {
+                if (args[i].contains("=")) {
+                    String[] pair = args[i].split("=", 2);
+                    parameters.put(pair[0], pair[1]);
+                }
+                else {
+                    throw new Exception("Can't parse parameter: '" + args[i] + "', expected format: --parameter=value");
+                }
+            }
+
+            Command cmd = null;
+
             if (cmdName.equals("dump-meta")) {
                 String frameType = parameters.remove("--frame-type");
                 String dumpFileName = parameters.remove("--dump-file");
@@ -85,14 +86,16 @@ public class InsvTools {
                 String endTime = parameters.remove("--end-time");
                 String groupFlag = parameters.remove("--group");
                 String cutFileName = parameters.remove("--out-file");
+                String timestampScale = parameters.remove("--timestamp-scale");
 
                 boolean groupOfFiles = groupFlag == null || Boolean.parseBoolean(groupFlag);
+                long scale = timestampScale == null ? 0 : Long.parseLong(timestampScale);
 
                 if (startTime == null && endTime == null) {
                     throw new Exception("At least one parameter (--start-time or --end-time) should be specified");
                 }
 
-                cmd = new CutCommand(fileName, cutFileName, parseTime(startTime), parseTime(endTime), groupOfFiles);
+                cmd = new CutCommand(fileName, cutFileName, parseTime(startTime), parseTime(endTime), scale, groupOfFiles);
             }
 
             if (cmd == null) {

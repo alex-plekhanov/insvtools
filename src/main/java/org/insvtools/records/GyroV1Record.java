@@ -2,16 +2,16 @@ package org.insvtools.records;
 
 import java.nio.ByteBuffer;
 
-public class GyroRecord extends TimestampedRecord {
+public class GyroV1Record extends TimestampedRecord {
     public static final int SIZE = TS_SIZE + 6 * Double.BYTES;
     private final double payload[];
 
-    private GyroRecord(long timestamp, double[] payload) {
+    private GyroV1Record(long timestamp, double[] payload) {
         super(timestamp);
         this.payload = payload;
     }
 
-    public static GyroRecord parse(ByteBuffer buf) {
+    public static GyroV1Record parse(ByteBuffer buf) {
         long timestamp = buf.getLong();
         double[] payload = new double[6];
 
@@ -33,7 +33,7 @@ public class GyroRecord extends TimestampedRecord {
         }
 */
 
-        return new GyroRecord(timestamp, payload);
+        return new GyroV1Record(timestamp, payload);
     }
 
     @Override

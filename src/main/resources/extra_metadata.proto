@@ -64,10 +64,10 @@ message ExtraMetadata {
   optional int32 GyroFilterType = 50;
   optional int32 GyroType = 51;
   //unknown MediaDataRotateAngel = 52;
-  //unknown OffsetV2 = 53;
-  //unknown OffsetV3 = 54;
-  //unknown OriginalOffsetV2 = 55;
-  //unknown OriginalOffsetV3 = 56;
+  optional string OffsetV2 = 53;
+  optional string OffsetV3 = 54;
+  optional string OriginalOffsetV2 = 55;
+  optional string OriginalOffsetV3 = 56;
   optional int32 FocusSensor = 57;
   optional int32 ExpectOutputType = 58;
   //unknown TimelapseIntervalInMillisecond = 59;

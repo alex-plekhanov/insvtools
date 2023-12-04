@@ -2,8 +2,7 @@ package org.insvtools;
 
 import org.insvtools.frames.Frame;
 import org.insvtools.frames.FrameHeader;
-import org.insvtools.dump.Dumper;
-import org.insvtools.frames.FrameTypes;
+import org.insvtools.frames.FrameType;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -52,7 +51,7 @@ public class InsvMetadata {
     }
 
     public void parse() throws Exception {
-        Frame infoFrame = findFrame(FrameTypes.INFO);
+        Frame infoFrame = findFrame(FrameType.INFO);
 
         // Parse info frame first, since it can be required by other frames.
         if (infoFrame != null) {
@@ -84,7 +83,12 @@ public class InsvMetadata {
         return frames;
     }
 
-    public @Nullable Frame findFrame(int frameType) {
+    public @Nullable Frame findFrame(int frameTypeCode) {
+        return frames.stream().filter(f -> f.getHeader().getFrameTypeCode() == frameTypeCode).findFirst().orElse(null);
+    }
+
+    public @Nullable Frame findFrame(FrameType frameType) {
         return frames.stream().filter(f -> f.getHeader().getFrameType() == frameType).findFirst().orElse(null);
     }
+
 }

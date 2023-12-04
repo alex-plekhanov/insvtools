@@ -11,7 +11,7 @@ Maven and JDK 8 or later are required to build InsvTools as a jar.
 
 Сommand:
 ```
-mvn clean package
+mvn clean package -DskipTests
 ```
 Produces archive `target/release-package/insvtools-${version}.zip` with jar file and all dependencies.
 
@@ -22,8 +22,8 @@ Maven and GraalVM with native-image tool (including dependencies, see https://ww
 Commands:
 ```
 mvn clean test-compile
-mvn -Pnative -Dagent exec:exec@java-agent
-mvn -Pnative -Dagent package
+mvn exec:exec@java-agent -Pnative -Dagent
+mvn package -Pnative -Dagent -DskipTests 
 ```
 Produces archive `target/release-package/insvtools-native-${version}.zip` with standalone executable file `insvtools`.
 
@@ -40,13 +40,14 @@ insvtools cut [--start-time=<time>] [--end-time=<time>] [--group=<true/false>] [
 ```
 Parameters:
 
-| Parameter                 | Description                                                                                 |
-|---------------------------|---------------------------------------------------------------------------------------------|
-| `[--start-time=<time>]`   | Start time in format [MM:]SS[.SSS]                                                          |
-| `[--end-time=<time>]`     | End time in format [MM:]SS[.SSS]                                                            |
-| `[--group=<true/false>]`  | Process the whole group of files related to specified file (true by default)                |
-| `[--out-file=<filename>]` | Use specified output file (by default 'cut' suffix will be added to the original file name) |
-| `<filename>`              | Input *.insv file name                                                                      |
+| Parameter                     | Description                                                                                 |
+|-------------------------------|---------------------------------------------------------------------------------------------|
+| `[--start-time=<time>]`       | Start time in format [MM:]SS[.SSS]                                                          |
+| `[--end-time=<time>]`         | End time in format [MM:]SS[.SSS]                                                            |
+| `[--timestamp-scale=<scale>]` | Gyro records timestamp scale (autodetect by default)                                        |
+| `[--group=<true/false>]`      | Process the whole group of files related to specified file (true by default)                |
+| `[--out-file=<filename>]`     | Use specified output file (by default 'cut' suffix will be added to the original file name) |
+| `<filename>`                  | Input *.insv file name                                                                      |
 
 ### Examples
 

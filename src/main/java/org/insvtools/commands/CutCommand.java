@@ -2,9 +2,11 @@ package org.insvtools.commands;
 
 import org.insvtools.InsvHeader;
 import org.insvtools.InsvMetadata;
-import org.insvtools.frames.FrameTypes;
+import org.insvtools.frames.FrameType;
 import org.insvtools.frames.InfoFrame;
 import org.insvtools.frames.TimelapseFrame;
+import org.insvtools.records.GyroV1Record;
+import org.insvtools.records.GyroV2Record;
 import org.insvtools.records.TimestampedRecord;
 import org.mp4parser.Container;
 import org.mp4parser.muxer.FileRandomAccessSourceImpl;
@@ -26,38 +28,47 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class CutCommand extends AbstractCommand {
-    private static final String INSV_EXTENSION = ".insv";
     private static final String VIDEO_HANDLER_TYPE = "vide";
     private final File mainFile; // Main file in group (file name was explicitly provided)
     private final String cutFileName; // Cut file name for main file (can be null)
     private final double startTime;
     private final double endTime;
     private final boolean groupOfFiles; // Process the whole group of files related to passed file.
+    private final long timestampScale;
 
-    public CutCommand(String fileName, String cutFileName, double startTime, double endTime, boolean groupOfFiles) {
+    public CutCommand(String fileName, String cutFileName, double startTime, double endTime, long timestampScale,
+                      boolean groupOfFiles) {
         super(fileName);
         this.mainFile = new File(fileName);
         this.cutFileName = cutFileName;
         this.startTime = startTime;
         this.endTime = endTime;
+        this.timestampScale = timestampScale;
         this.groupOfFiles = groupOfFiles;
     }
 
-    private File cutFileFor(File file) {
+    String fileExtension(File file) {
+        int dotIndex = file.getName().lastIndexOf('.');
+        return dotIndex == -1 ? "" : file.getName().substring(dotIndex);
+    }
+
+    File cutFileFor(File file) {
         if (file.getName().equals(mainFile.getName()) && cutFileName != null) {
             return new File(cutFileName);
         }
 
-        String mainFileNameWoExt = mainFile.getName().replaceAll(INSV_EXTENSION + "$", "");
-        String fileNameWOExt = file.getName().replaceAll(INSV_EXTENSION + "$", "");
+        String ext = fileExtension(file);
+
+        String mainFileNameWoExt = mainFile.getName().replaceAll(fileExtension(mainFile) + "$", "");
+        String fileNameWOExt = file.getName().replaceAll(ext + "$", "");
 
         if (cutFileName == null) {
-            return new File(fileNameWOExt + ".cut" + INSV_EXTENSION);
+            return new File(fileNameWOExt + ".cut" + ext);
         }
         else if (!cutFileName.contains(mainFileNameWoExt)) {
             File cutDir = new File(cutFileName).getParentFile();
 
-            return new File(cutDir, fileNameWOExt + ".cut" + INSV_EXTENSION);
+            return new File(cutDir, fileNameWOExt + ".cut" + ext);
         }
         else {
             return new File(cutFileName.replace(mainFileNameWoExt, fileNameWOExt));
@@ -68,7 +79,7 @@ public class CutCommand extends AbstractCommand {
      * Create map of files to process (input) to cut (output) files.
      */
     private Map<File, File> filesToProcess() {
-        Pattern insvFilePattern = Pattern.compile("(VID|LRV)_(\\d{8}_\\d{6})_\\d\\d_(\\d+\\.insv)");
+        Pattern insvFilePattern = Pattern.compile("(\\w*)(VID|LRV)_(\\d{8}_\\d{6})_\\d\\d_(\\d+\\.\\w+)");
 
         Matcher matcher = insvFilePattern.matcher(mainFile.getName());
 
@@ -76,12 +87,13 @@ public class CutCommand extends AbstractCommand {
             return Collections.singletonMap(mainFile, cutFileFor(mainFile));
         }
 
-        String dateTime = matcher.group(2);
-        String numExt = matcher.group(3);
+        String prefix = matcher.group(1);
+        String dateTime = matcher.group(3);
+        String numExt = matcher.group(4);
 
         File dir = new File(fileName).getAbsoluteFile().getParentFile();
 
-        Pattern groupPattern = Pattern.compile("(VID|LRV)_" + dateTime + "_\\d\\d_" + numExt);
+        Pattern groupPattern = Pattern.compile(prefix + "(VID|LRV)_" + dateTime + "_\\d\\d_" + numExt);
 
         File[] files = dir.listFiles(f -> groupPattern.matcher(f.getName()).matches());
 
@@ -184,7 +196,8 @@ public class CutCommand extends AbstractCommand {
 
                     movie.addTrack(new AppendTrack(new ClippedTrack(track, firstSample, lastSample)));
 
-                    logger.debug("Track " + track.getName() + '(' + track.getHandler() + ") has been clipped [firstSample=" + firstSample + ", lastSample=" + lastSample + ']');
+                    logger.debug("Track " + track.getName() + '(' + track.getHandler() + ") has been clipped " +
+                            "[firstSample=" + firstSample + ", lastSample=" + lastSample + ']');
 
                     if (VIDEO_HANDLER_TYPE.equals(track.getHandler())) {
                         videoStartSample = firstSample;
@@ -208,15 +221,26 @@ public class CutCommand extends AbstractCommand {
                         out.writeContainer(cutFileChannel);
 
                         if (metadata != null) {
-                            InfoFrame infoFrame = (InfoFrame)metadata.findFrame(FrameTypes.INFO);
+                            InfoFrame infoFrame = (InfoFrame)metadata.findFrame(FrameType.INFO);
 
                             assert infoFrame != null;
 
-                            // After version 2 of firmware for some reason scale of timestamps are changed from
+                            // After some firmware update for some reason scale of timestamps are changed from
                             // millis to micros. I didn't find exact flag or field in metadata to calculate scale,
-                            // so decided to rely on version.
-                            long scale = infoFrame.getExtraMetadata().getFwVersion().startsWith("v1.") ?
-                                    1_000L : 1_000_000L;
+                            // so decided to rely on gyro data size.
+                            long scale = timestampScale;
+
+                            if (scale == 0) {
+                                int gyroSize = infoFrame.getExtraMetadata().getGyro().size();
+                                if (gyroSize == GyroV1Record.SIZE)
+                                    scale = 1_000L;
+                                else if (gyroSize == GyroV2Record.SIZE)
+                                    scale = 1_000_000L;
+                                else
+                                    throw new Exception("Can't autodetect timestamp scale (gyro data size=" + gyroSize +
+                                            "), please provide it as --timestamp-scale=<scale> parameter");
+                            }
+
                             long firstFrameTs = infoFrame.getExtraMetadata().getFirstFrameTimestamp();
                             long firstGpsTs = infoFrame.getExtraMetadata().getFirstGpsTimestamp();
 
@@ -225,7 +249,7 @@ public class CutCommand extends AbstractCommand {
                             infoFrame.setTotalTime((int)Math.round(videoEndTime - videoStartTime));
                             infoFrame.setFirstGpsTimestamp(firstGpsTs + (long)(startTimeAdjusted * scale));
 
-                            TimelapseFrame timelapseFrame = (TimelapseFrame)metadata.findFrame(FrameTypes.TIMELAPSE);
+                            TimelapseFrame timelapseFrame = (TimelapseFrame)metadata.findFrame(FrameType.TIMELAPSE);
 
                             // Delete timelapse records for deleted samples.
                             if (timelapseFrame != null) {
@@ -240,6 +264,17 @@ public class CutCommand extends AbstractCommand {
                         }
                     }
                 }
+            }
+            catch (Exception e) {
+                try {
+                    if (cutFile.exists())
+                        cutFile.delete();
+                }
+                catch (Exception e0) {
+                    e.addSuppressed(e0);
+                }
+
+                throw e;
             }
         }
     }

@@ -8,13 +8,15 @@ import java.nio.ByteOrder;
 public class FrameHeader {
     public static final int FRAME_HEADER_SIZE = 6;
 
-    private final byte frameType;
+    private final byte frameTypeCode;
+    private final FrameType frameType;
     private final byte frameVer;
     private final int frameSize;
     private final transient long framePos;
 
-    public FrameHeader(byte frameType, byte frameVer, int frameSize, long framePos) {
-        this.frameType = frameType;
+    public FrameHeader(byte frameTypeCode, byte frameVer, int frameSize, long framePos) {
+        this.frameTypeCode = frameTypeCode;
+        this.frameType = FrameType.valueOf(frameTypeCode);
         this.frameVer = frameVer;
         this.frameSize = frameSize;
         this.framePos = framePos;
@@ -30,7 +32,8 @@ public class FrameHeader {
         file.readFully(buf.array());
 
         frameVer = buf.get();
-        frameType = buf.get();
+        frameTypeCode = buf.get();
+        frameType = FrameType.valueOf(frameTypeCode);
         frameSize = buf.getInt();
         framePos = pos - frameSize - FRAME_HEADER_SIZE;
     }
@@ -39,7 +42,7 @@ public class FrameHeader {
         ByteBuffer buf = ByteBuffer.allocate(FRAME_HEADER_SIZE).order(ByteOrder.LITTLE_ENDIAN);
 
         buf.put(frameVer);
-        buf.put(frameType);
+        buf.put(frameTypeCode);
         buf.putInt(frameSize);
 
         file.write(buf.array());
@@ -47,7 +50,11 @@ public class FrameHeader {
         return FRAME_HEADER_SIZE;
     }
 
-    public byte getFrameType() {
+    public byte getFrameTypeCode() {
+        return frameTypeCode;
+    }
+
+    public FrameType getFrameType() {
         return frameType;
     }
 

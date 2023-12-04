@@ -14,6 +14,8 @@ public class Dumper {
         gson = gsonBuilder
                 .registerTypeAdapter(ExtraMetadata.class, new ExtraMetadataAdapter())
                 .registerTypeAdapter(byte[].class, new BytesAdapter())
+                .registerTypeAdapter(short[].class, new ShortsAdapter())
+                .registerTypeAdapter(double[].class, new DoublesAdapter())
                 .setPrettyPrinting()
                 .create();
     }
