@@ -247,7 +247,7 @@ public class CutCommand extends AbstractCommand {
                             infoFrame.setFileSize(cutFileHandler.getFilePointer());
                             infoFrame.setFirstFrameTimestamp(firstFrameTs + (long)(startTimeAdjusted * scale));
                             infoFrame.setTotalTime((int)Math.round(videoEndTime - videoStartTime));
-                            infoFrame.setFirstGpsTimestamp(firstGpsTs + (long)(startTimeAdjusted * scale));
+                            infoFrame.setFirstGpsTimestamp(firstGpsTs + (long)(startTimeAdjusted * 1000));
 
                             TimelapseFrame timelapseFrame = (TimelapseFrame)metadata.findFrame(FrameType.TIMELAPSE);
 

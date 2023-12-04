@@ -1,6 +1,7 @@
 package org.insvtools.records;
 
 import java.nio.ByteBuffer;
+import java.time.Instant;
 
 public class GpsRecord extends TimestampedRecord {
     public static final int SIZE = TS_SIZE + 45;
@@ -33,7 +34,8 @@ public class GpsRecord extends TimestampedRecord {
         double track = buf.getDouble();
         double altitude = buf.getDouble();
 
-        String description = "position " + latitude + ns + ' ' + longitude + ew +
+        String description = "time " + Instant.ofEpochSecond(timestamp).toString() +
+                " position " + latitude + ns + ' ' + longitude + ew +
                 " speed " + speed +
                 " track " + track +
                 " altitude " + altitude;
