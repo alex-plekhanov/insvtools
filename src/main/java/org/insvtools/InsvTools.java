@@ -13,6 +13,10 @@ public class InsvTools {
     private static final Logger logger = LoggerFactory.getLogger(InsvTools.class);
 
     public static void main(String... args) throws Exception {
+        System.exit(run(args));
+    }
+
+    public static int run(String... args) throws Exception {
         String ver = InsvTools.class.getPackage().getImplementationVersion();
         if (args.length < 2) {
             System.out.println("InsvTools v." + ver);
@@ -43,7 +47,7 @@ public class InsvTools {
             System.out.println();
             System.out.println("    replace-meta                    - replace insv file metadata with another from file");
             System.out.println("        [--meta-file=<filename>]    - metadata file name (by default 'meta' suffix will be added to the original file name)");
-            return;
+            return 0;
         }
 
         try {
@@ -110,9 +114,13 @@ public class InsvTools {
             logger.info("InsvTools v." + ver + ", start processing '" + cmdName + "' command");
             cmd.run();
             logger.info("Processed successfully");
+
+            return 0;
         }
         catch (Exception e) {
             logger.error("Failure: " + (e.getMessage() == null ? e : e.getMessage()), e);
+
+            return -1;
         }
     }
 

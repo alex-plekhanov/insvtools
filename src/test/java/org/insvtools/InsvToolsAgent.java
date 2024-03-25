@@ -37,14 +37,14 @@ public class InsvToolsAgent {
     public static void main(String[] args) throws Exception {
         String insvFileName = InsvToolsAgent.class.getClassLoader().getResource("sample.insv").getFile();
         try {
-            InsvTools.main("cut", "--end-time=1", insvFileName);
+            InsvTools.run("cut", "--end-time=1", insvFileName);
         }
         finally {
             Files.deleteIfExists(new File("sample.cut.insv").toPath());
         }
 
         try {
-            InsvTools.main("dump-meta", insvFileName);
+            InsvTools.run("dump-meta", insvFileName);
         }
         finally {
             Files.deleteIfExists(new File("sample.insv.meta.json").toPath());

@@ -28,8 +28,8 @@ public class GyroV2Record extends TimestampedRecord {
 
         assert payload.length == 6;
 
-        for (double v : payload) {
-            buf.putDouble(v);
+        for (short v : payload) {
+            buf.putShort(v);
         }
     }
 
