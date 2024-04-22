@@ -1,6 +1,6 @@
 package org.insvtools.commands;
 
-import org.insvtools.InsvMetadata;
+import org.insvtools.InsvHeader;
 
 import java.io.File;
 import java.io.RandomAccessFile;
@@ -24,12 +24,24 @@ public class MetaExtractCommand extends AbstractCommand {
             throw new Exception("File " + metaFileName + " already exists");
         }
 
-        InsvMetadata metadata = readMetaData(fileName);
+        try (RandomAccessFile file = new RandomAccessFile(fileName, "r")) {
+            InsvHeader metaHeader = InsvHeader.read(file);
 
-        logger.info("Extracting metadata from " + fileName + " to " + metaFileName);
+            if (metaHeader == null)
+                throw new Exception("Metadata not found");
 
-        try (RandomAccessFile metaFileHandler = new RandomAccessFile(metaFile, "rw")) {
-            metadata.write(metaFileHandler);
+            file.seek(metaHeader.getMetaDataPos());
+
+            logger.info("Extracting metadata from " + fileName + " to " + metaFileName);
+
+            byte[] buf = new byte[8192];
+
+            try (RandomAccessFile metaFileHandler = new RandomAccessFile(metaFile, "rw")) {
+                int read;
+
+                while ((read = file.read(buf)) > 0)
+                    metaFileHandler.write(buf, 0, read);
+            }
         }
     }
 }

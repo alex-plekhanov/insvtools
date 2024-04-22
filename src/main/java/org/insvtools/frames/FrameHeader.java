@@ -1,5 +1,6 @@
 package org.insvtools.frames;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -54,7 +55,7 @@ public class FrameHeader {
         return frameTypeCode;
     }
 
-    public FrameType getFrameType() {
+    public @Nullable FrameType getFrameType() {
         return frameType;
     }
 
@@ -68,5 +69,14 @@ public class FrameHeader {
 
     public long getFramePos() {
         return framePos;
+    }
+
+    @Override
+    public String toString() {
+        return "FrameHeader {" +
+            frameType + (frameVer != 0 ? "." + frameVer : "") +
+            ", size=" + frameSize +
+            ", pos=" + framePos +
+            '}';
     }
 }

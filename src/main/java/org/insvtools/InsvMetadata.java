@@ -3,11 +3,13 @@ package org.insvtools;
 import org.insvtools.frames.Frame;
 import org.insvtools.frames.FrameHeader;
 import org.insvtools.frames.FrameType;
+import org.insvtools.frames.IndexFrame;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,6 +35,7 @@ public class InsvMetadata {
         }
 
         List<Frame> frames = new ArrayList<>();
+        InsvMetadata metadata = new InsvMetadata(header, frames);
 
         long curPos = file.length() - InsvHeader.HEADER_SIZE;
 
@@ -41,13 +44,37 @@ public class InsvMetadata {
             FrameHeader frameHeader = new FrameHeader(file);
             Frame frame = Frame.read(file, frameHeader);
             frames.add(frame);
+
+            if (frameHeader.getFrameType() == FrameType.INDEX) {
+                // Read frames using index frame.
+                frame.parse(metadata);
+
+                frames.addAll(readIndexedFrames(file, (IndexFrame)frame));
+
+                break;
+            }
+
             curPos = curPos - frameHeader.getFrameSize() - FrameHeader.FRAME_HEADER_SIZE;
         }
 
         // Since we read frames from last to first, reverse it.
         Collections.reverse(frames);
 
-        return new InsvMetadata(header, frames);
+        return metadata;
+    }
+
+    private static Collection<Frame> readIndexedFrames(RandomAccessFile file, IndexFrame indexFrame) throws Exception {
+        Collection<Frame> frames = new ArrayList<>();
+
+        for (FrameHeader frameHeader : indexFrame.getFramesIndex()) {
+            if (frameHeader == null)
+                continue;
+
+            Frame frame = Frame.read(file, frameHeader);
+            frames.add(frame);
+        }
+
+        return frames;
     }
 
     public void parse() throws Exception {

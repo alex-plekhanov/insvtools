@@ -1,6 +1,7 @@
 package org.insvtools.frames;
 
 public enum FrameType {
+    INDEX(0),
     INFO(1),
     THUMBNAIL(2),
     GYRO(3),
@@ -13,9 +14,19 @@ public enum FrameType {
     ANCHORS(10),
     THREE_A_SIMULATION(11),
     EXPOSURE_SECONDARY(12),
+    MAGNETIC(13),
+    EULER(14),
     GYRO_SECONDARY(15),
     SPEED(16),
-    TIME_MAP(-128);
+    TBOX(17),
+    EDITOR(18),
+    HEARTRATE(19),
+    FORWARD_DIRECTION(20),
+    UPVIEW(21),
+    SHELL_RECOGNITION_DATA(22),
+    POS(23),
+    TIMELAPSE_QUAT(24);
+    //TIME_MAP(-128);
 
     private final byte code;
 

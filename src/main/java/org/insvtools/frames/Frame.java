@@ -48,7 +48,12 @@ public class Frame {
     }
 
     private static Frame create(FrameHeader header, ByteBuffer buffer) {
+        if (header.getFrameType() == null)
+            return new Frame(header, buffer);
+
         switch (header.getFrameType()) {
+            case INDEX:
+                return new IndexFrame(header, buffer);
             case INFO:
                 return new InfoFrame(header, buffer);
             case GYRO:

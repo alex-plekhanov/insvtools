@@ -29,7 +29,7 @@ message ExtraMetadata {
   //unknown HdrState = 15;
   //unknown HdrIdentifier = 16;
   optional string OriginalOffset = 17;
-  optional int32 TriggerSource = 18;
+  optional TriggerSourceEnum TriggerSource = 18;
   optional Vector2 Dimension = 19;
   optional int32 FrameRate = 20;
   //unknown ImageTranslate = 21;
@@ -56,7 +56,7 @@ message ExtraMetadata {
   optional bool IsFlowstateOnline = 42;
   optional bool IsDewarp = 43;
   optional Vector2 ResolutionSize = 44;
-  optional int32 BatteryType = 45;
+  optional BatteryTypeEnum BatteryType = 45;
   optional int32 CamPosture = 46;
   optional int32 FovType = 47;
   optional double Distance = 48;
@@ -68,7 +68,7 @@ message ExtraMetadata {
   optional string OffsetV3 = 54;
   optional string OriginalOffsetV2 = 55;
   optional string OriginalOffsetV3 = 56;
-  optional int32 FocusSensor = 57;
+  optional SensorDeviceEnum FocusSensor = 57;
   optional int32 ExpectOutputType = 58;
   //unknown TimelapseIntervalInMillisecond = 59;
   //unknown PhotoRot = 60;
@@ -87,7 +87,7 @@ message ExtraMetadata {
     //unknown RmPurple = 4;
     //unknown GyroCalibrateMode = 5;
     //unknown EulerEnable = 6;
-    //unknown LogoType = 7;
+    //LogoTypeEnum LogoType = 7;
     //unknown AdjustFilters = 8;
     //unknown LutFilter = 9;
     //unknown OffsetConvertStates = 10;
@@ -106,7 +106,7 @@ message ExtraMetadata {
   message FileGroupInfoMsg {
     optional int32 Type = 1;
     optional int32 Index = 2;
-    optional bytes Identify = 3;
+    optional string Identify = 3;
     //unknown Total = 4;
   }
 
@@ -122,5 +122,32 @@ message ExtraMetadata {
   message GyroConfigInfo {
     optional int64 AccRange = 1;
     optional int64 GyroRange = 2;
+  }
+
+  enum LogoTypeEnum {
+    UNKNOWN_LOGO_TYPE = 0;
+    NO_LOGO = 1;
+    INSTA_LOGO = 2;
+  }
+
+  enum TriggerSourceEnum {
+    Unknown = 0;
+    CameraButton = 1;
+    RemoteControl = 2;
+    USB = 3;
+    BtRemote = 4;
+  }
+
+  enum BatteryTypeEnum {
+    THICK = 0;
+    THIN = 1;
+    VERTICAL = 2;
+  }
+
+  enum SensorDeviceEnum {
+    SENSOR_DEVICE_UNKNOWN = 0;
+    SENSOR_DEVICE_FRONT = 1;
+    SENSOR_DEVICE_REAR = 2;
+    SENSOR_DEVICE_ALL = 3;
   }
 }
