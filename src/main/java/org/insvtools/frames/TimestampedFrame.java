@@ -18,10 +18,12 @@ public abstract class TimestampedFrame extends Frame {
     }
 
     @Override
-    protected void parseInternal(InsvMetadata metadata) {
+    protected boolean parseInternal(InsvMetadata metadata) {
         while (payload.remaining() >= recordSize()) {
             records.add(parseRecord(payload));
         }
+
+        return true;
     }
 
     protected abstract TimestampedRecord parseRecord(ByteBuffer buffer);

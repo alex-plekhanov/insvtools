@@ -4,6 +4,7 @@ import org.insvtools.InsvHeader;
 import org.insvtools.InsvMetadata;
 import org.insvtools.frames.Frame;
 import org.insvtools.frames.FrameHeader;
+import org.insvtools.frames.FrameType;
 
 import java.io.File;
 import java.io.RandomAccessFile;
@@ -40,6 +41,14 @@ public class MetaComposeCommand extends AbstractCommand {
 
         for (File frameFile : files) {
             try (RandomAccessFile frameFileHandler = new RandomAccessFile(frameFile, "r")) {
+                if (frameFile.getName().contains("typeRaw.meta")) {
+                    logger.info("Adding raw frame from " + frameFile.getName() + " to " + fileName);
+
+                    frames.add(Frame.readRaw(frameFileHandler, 0, frameFile.length()));
+
+                    continue;
+                }
+
                 Matcher matcher = typeExtractor.matcher(frameFile.getName());
 
                 if (!matcher.matches()) {

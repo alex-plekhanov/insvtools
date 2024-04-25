@@ -2,6 +2,7 @@ package org.insvtools.commands;
 
 import org.insvtools.InsvMetadata;
 import org.insvtools.frames.Frame;
+import org.insvtools.frames.FrameType;
 
 import java.io.File;
 import java.io.RandomAccessFile;
@@ -27,13 +28,21 @@ public class MetaDecomposeCommand extends AbstractCommand {
                 continue;
             }
 
-            StringBuilder typeBuilder = new StringBuilder().append(frame.getHeader().getFrameTypeCode());
+            String type;
 
-            if (frame.getHeader().getFrameVersion() > 0) {
-                typeBuilder.append('_').append(frame.getHeader().getFrameVersion());
+            if (frame.getHeader().getFrameType() == FrameType.RAW)
+                type = "Raw";
+            else {
+                StringBuilder typeBuilder = new StringBuilder().append(frame.getHeader().getFrameTypeCode());
+
+                if (frame.getHeader().getFrameVersion() > 0) {
+                    typeBuilder.append('_').append(frame.getHeader().getFrameVersion());
+                }
+
+                type = typeBuilder.toString();
             }
 
-            String frameFileName = String.format("%s.frame%02d.type%s.meta", fileName, i, typeBuilder);
+            String frameFileName = String.format("%s.frame%02d.type%s.meta", fileName, i, type);
 
             File frameFile = new File(frameFileName);
 

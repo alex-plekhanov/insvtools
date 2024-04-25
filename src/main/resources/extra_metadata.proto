@@ -17,8 +17,7 @@ message ExtraMetadata {
   //unknown FileType = 4;
   optional string Offset = 5;
   //unknown Ip = 6;
-  //unknown FileType = 4;
-  //unknown CreationTime = 7;
+  optional int64 CreationTime = 7;
   //unknown ExportTime = 8;
   optional int64 FileSize = 9;
   optional int32 TotalTime = 10; // In seconds.

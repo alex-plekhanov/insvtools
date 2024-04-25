@@ -1,6 +1,7 @@
 package org.insvtools.frames;
 
 public enum FrameType {
+    RAW(-1),
     INDEX(0),
     INFO(1),
     THUMBNAIL(2),

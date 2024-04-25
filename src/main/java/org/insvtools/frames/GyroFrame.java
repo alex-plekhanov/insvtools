@@ -21,15 +21,15 @@ public class GyroFrame extends TimestampedFrame {
     }
 
     @Override
-    protected void parseInternal(InsvMetadata metadata) {
+    protected boolean parseInternal(InsvMetadata metadata) {
         InfoFrame infoFrame = (InfoFrame)metadata.findFrame(FrameType.INFO);
 
         if (infoFrame == null || !infoFrame.parsed || infoFrame.getExtraMetadata() == null
                 || (recordSize = infoFrame.getExtraMetadata().getGyro().size()) == 0) {
-            return; // Don't know payload size, can't parse in this case.
+            return false; // Don't know payload size, can't parse in this case.
         }
 
-        super.parseInternal(metadata);
+        return super.parseInternal(metadata);
     }
 
     @Override

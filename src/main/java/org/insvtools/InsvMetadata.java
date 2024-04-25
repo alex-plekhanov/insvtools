@@ -8,10 +8,9 @@ import org.insvtools.frames.IndexFrame;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+
+import static org.insvtools.frames.FrameHeader.FRAME_HEADER_SIZE;
 
 public class InsvMetadata {
     private final InsvHeader header;
@@ -54,7 +53,13 @@ public class InsvMetadata {
                 break;
             }
 
-            curPos = curPos - frameHeader.getFrameSize() - FrameHeader.FRAME_HEADER_SIZE;
+            curPos = curPos - frameHeader.getFrameSize() - FRAME_HEADER_SIZE;
+        }
+
+        if (frames.size() > 0) {
+            Frame lastFrame = frames.get(frames.size() - 1);
+            if (lastFrame.getHeader().getFramePos() > header.getMetaDataPos())
+                frames.add(Frame.readRaw(file, header.getMetaDataPos(), lastFrame.getHeader().getFramePos()));
         }
 
         // Since we read frames from last to first, reverse it.
@@ -64,7 +69,7 @@ public class InsvMetadata {
     }
 
     private static Collection<Frame> readIndexedFrames(RandomAccessFile file, IndexFrame indexFrame) throws Exception {
-        Collection<Frame> frames = new ArrayList<>();
+        List<Frame> frames = new ArrayList<>();
 
         for (FrameHeader frameHeader : indexFrame.getFramesIndex()) {
             if (frameHeader == null)
@@ -74,7 +79,24 @@ public class InsvMetadata {
             frames.add(frame);
         }
 
-        return frames;
+        frames.sort(Comparator.comparing(f -> -f.getHeader().getFramePos()));
+
+        List<Frame> res = new ArrayList<>();
+
+        long prevPos = indexFrame.getHeader().getFramePos();
+
+        for (Frame frame : frames) {
+            long frameEndPos = frame.getHeader().getFramePos() + frame.getHeader().getFrameSize() + FRAME_HEADER_SIZE;
+
+            if (frameEndPos < prevPos)
+                res.add(Frame.readRaw(file, frameEndPos, prevPos));
+
+            res.add(frame);
+
+            prevPos = frame.getHeader().getFramePos();
+        }
+
+        return res;
     }
 
     public void parse() throws Exception {
@@ -93,11 +115,64 @@ public class InsvMetadata {
     }
 
     public void write(RandomAccessFile file) throws IOException {
+        if (findFrame(FrameType.INDEX) != null) {
+            writeIndexed(file);
+            return;
+        }
+
         int size = 0;
 
         for (Frame frame : frames) {
             size += frame.write(file);
         }
+
+        header.write(file, size + InsvHeader.HEADER_SIZE);
+    }
+
+    public void writeIndexed(RandomAccessFile file) throws IOException {
+        List<FrameHeader> headers = new ArrayList<>();
+
+        int maxType = 0;
+
+        for (FrameType type : FrameType.values())
+            maxType = Math.max(type.getCode(), maxType);
+
+        for (Frame frame : frames)
+            maxType = Math.max(frame.getHeader().getFrameTypeCode(), maxType);
+
+        for (int i = 0; i <= maxType; i++)
+            headers.add(null);
+
+        IndexFrame indexFrame = null;
+
+        int size = 0;
+        long metadataPos = file.getFilePointer();
+
+        for (Frame frame : frames) {
+            FrameHeader header = frame.getHeader();
+
+            if (header.getFrameType() == FrameType.INDEX) {
+                indexFrame = (IndexFrame)frame;
+                continue;
+            }
+
+            long pos = file.getFilePointer();
+            int frameSize = frame.write(file);
+
+            size += frameSize;
+
+            if (header.getFrameType() == FrameType.RAW)
+                continue;
+
+            headers.set(header.getFrameTypeCode(),
+                new FrameHeader(header.getFrameTypeCode(), header.getFrameVersion(), frameSize - FRAME_HEADER_SIZE, pos - metadataPos));
+        }
+
+        assert indexFrame != null;
+
+        indexFrame.getFramesIndex().clear();
+        indexFrame.getFramesIndex().addAll(headers);
+        size += indexFrame.write(file);
 
         header.write(file, size + InsvHeader.HEADER_SIZE);
     }

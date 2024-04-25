@@ -5,8 +5,6 @@ import org.insvtools.InsvMetadata;
 import org.insvtools.frames.FrameType;
 import org.insvtools.frames.InfoFrame;
 import org.insvtools.frames.TimelapseFrame;
-import org.insvtools.records.GyroV1Record;
-import org.insvtools.records.GyroV2Record;
 import org.insvtools.records.TimestampedRecord;
 import org.mp4parser.Container;
 import org.mp4parser.muxer.FileRandomAccessSourceImpl;
@@ -227,18 +225,14 @@ public class CutCommand extends AbstractCommand {
 
                             // After some firmware update for some reason scale of timestamps are changed from
                             // millis to micros. I didn't find exact flag or field in metadata to calculate scale,
-                            // so decided to rely on gyro data size.
+                            // so decided to rely on GyroTimestamp field sign, looks like it somehow related.
                             long scale = timestampScale;
 
                             if (scale == 0) {
-                                int gyroSize = infoFrame.getExtraMetadata().getGyro().size();
-                                if (gyroSize == GyroV1Record.SIZE)
+                                if (infoFrame.getExtraMetadata().getGyroTimestamp() < 0)
                                     scale = 1_000L;
-                                else if (gyroSize == GyroV2Record.SIZE)
-                                    scale = 1_000_000L;
                                 else
-                                    throw new Exception("Can't autodetect timestamp scale (gyro data size=" + gyroSize +
-                                            "), please provide it as --timestamp-scale=<scale> parameter");
+                                    scale = 1_000_000L;
                             }
 
                             long firstFrameTs = infoFrame.getExtraMetadata().getFirstFrameTimestamp();

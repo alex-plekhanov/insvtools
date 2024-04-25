@@ -33,6 +33,10 @@ public class Frame {
         return frame;
     }
 
+    public static Frame readRaw(RandomAccessFile file, long fromPos, long toPos) throws Exception {
+        return Frame.read(file, new FrameHeader(FrameType.RAW.getCode(), (byte)0, (int)(toPos - fromPos), fromPos));
+    }
+
     public int write(RandomAccessFile file) throws IOException {
         return parsed ? writeParsed(file) : writePayload(file);
     }
@@ -74,12 +78,12 @@ public class Frame {
             return;
         }
 
-        parseInternal(metadata);
-        parsed = true;
+        parsed = parseInternal(metadata);
     }
 
-    protected void parseInternal(InsvMetadata metadata) throws Exception {
+    protected boolean parseInternal(InsvMetadata metadata) throws Exception {
         // By default, do nothing with payload
+        return false;
     }
 
     public FrameHeader getHeader() {
@@ -88,5 +92,10 @@ public class Frame {
 
     public ByteBuffer getPayload() {
         return payload;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" + "header=" + header + ", parsed=" + parsed + '}';
     }
 }

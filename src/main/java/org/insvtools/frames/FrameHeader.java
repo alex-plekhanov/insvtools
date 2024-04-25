@@ -40,6 +40,9 @@ public class FrameHeader {
     }
 
     public int write(RandomAccessFile file, int frameSize) throws IOException {
+        if (frameType == FrameType.RAW)
+            return 0;
+
         ByteBuffer buf = ByteBuffer.allocate(FRAME_HEADER_SIZE).order(ByteOrder.LITTLE_ENDIAN);
 
         buf.put(frameVer);

@@ -20,7 +20,7 @@ public class InfoFrame extends Frame {
     }
 
     @Override
-    protected void parseInternal(InsvMetadata metadata) throws Exception {
+    protected boolean parseInternal(InsvMetadata metadata) throws Exception {
         // Version == 1 : ProtoBuf serializer
         // Version != 1 : JSON serializer
         if (header.getFrameVersion() != 1) {
@@ -31,6 +31,8 @@ public class InfoFrame extends Frame {
         int gyroDataSize = extraMetadata.getGyro().size();
         ByteBuffer gyroDataBuf = extraMetadata.getGyro().asReadOnlyByteBuffer().order(ByteOrder.LITTLE_ENDIAN);
         gyroRecord = gyroDataSize == 0 ? null : GyroRawRecord.parse(gyroDataBuf, gyroDataSize);
+
+        return true;
     }
 
     @Override
