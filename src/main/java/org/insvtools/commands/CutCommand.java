@@ -95,7 +95,7 @@ public class CutCommand extends AbstractCommand {
         String num = matcher.group(4);
         String ext = matcher.group(5);
 
-        if ("insv".equals(ext))
+        if ("insv".equals(ext) || "lrv".equals(ext))
             ext = "(insv|lrv)";
 
         Pattern groupPattern = Pattern.compile(prefix + "(VID|LRV)_" + dateTime + "_\\d\\d_" + num + "\\." + ext);

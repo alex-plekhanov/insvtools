@@ -91,6 +91,18 @@ public class CutCommandTest extends TestCase {
                 "LRV_20240414_135511_01_027.lrv"
         );
 
+        filesToProcess = filesToProcess("LRV_20240414_135511_01_027.lrv",
+                "VID_20240414_135511_00_027.insv",
+                "VID_20240414_135511_00_028.insv",
+                "VID_20240414_135511_00_027.mp4",
+                "LRV_20240414_135511_01_027.lrv"
+        );
+
+        assertFiles(filesToProcess,
+                "VID_20240414_135511_00_027.insv",
+                "LRV_20240414_135511_01_027.lrv"
+        );
+
         filesToProcess = filesToProcess("PRO_VID_20221010_115706_00_002.mp4",
                 "PRO_VID_20221010_115706_00_002.mp4",
                 "PRO_LRV_20221010_115706_01_002.mp4",
