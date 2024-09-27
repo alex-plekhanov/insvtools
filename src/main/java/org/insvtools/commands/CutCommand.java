@@ -6,7 +6,13 @@ import org.insvtools.frames.FrameType;
 import org.insvtools.frames.InfoFrame;
 import org.insvtools.frames.TimelapseFrame;
 import org.insvtools.records.TimestampedRecord;
+import org.mp4parser.Box;
 import org.mp4parser.Container;
+import org.mp4parser.IsoFile;
+import org.mp4parser.ParsableBox;
+import org.mp4parser.boxes.iso14496.part12.TrackBox;
+import org.mp4parser.boxes.iso14496.part12.UserDataBox;
+import org.mp4parser.muxer.Edit;
 import org.mp4parser.muxer.FileRandomAccessSourceImpl;
 import org.mp4parser.muxer.Movie;
 import org.mp4parser.muxer.Track;
@@ -19,6 +25,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -192,7 +199,16 @@ public class CutCommand extends AbstractCommand {
                         lastSampleTime = currentTime;
                     }
 
-                    movie.addTrack(new AppendTrack(new ClippedTrack(track, firstSample, lastSample)));
+                    // TODO rollback
+                    Track newTrack = new AppendTrack(new ClippedTrack(track, firstSample, lastSample));
+                    if (!track.getEdits().isEmpty()) {
+                        for (Edit edit : track.getEdits()) {
+                            newTrack.getEdits().add(new Edit(edit.getMediaTime(), edit.getTimeScale(),
+                                    edit.getMediaRate(), lastSampleTime - firstSampleTime));
+                            break;
+                        }
+                    }
+                    movie.addTrack(newTrack);
 
                     logger.debug("Track " + track.getName() + '(' + track.getHandler() + ") has been clipped " +
                             "[firstSample=" + firstSample + ", lastSample=" + lastSample + ']');
@@ -205,7 +221,7 @@ public class CutCommand extends AbstractCommand {
                     }
                 }
 
-                Container out = new DefaultMp4Builder().build(movie);
+                Container out = new Mp4Builder(insvMovie.isoFile).build(movie);
 
                 InsvMetadata metadata = readMetaDataOptional(fileName);
 
@@ -310,6 +326,7 @@ public class CutCommand extends AbstractCommand {
      */
     private static class InsvMovie implements Closeable {
         private final Movie movie;
+        private final IsoFile isoFile;
         private final RandomAccessFile file;
 
         public InsvMovie(File file) throws Exception {
@@ -325,6 +342,13 @@ public class CutCommand extends AbstractCommand {
                             fis.getChannel();
 
                     movie = MovieCreator.build(fc, new FileRandomAccessSourceImpl(this.file), file.getName());
+                }
+                try (FileInputStream fis = new FileInputStream(file)) {
+                    ReadableByteChannel fc = (insvHeader != null) ?
+                            new LimitedReadableChannel(fis.getChannel(), insvHeader.getMetaDataPos()) :
+                            fis.getChannel();
+
+                    isoFile = new IsoFile(fc);
                 }
             }
             catch (Exception e) {
@@ -388,6 +412,56 @@ public class CutCommand extends AbstractCommand {
         @Override
         public void close() throws IOException {
             delegate.close();
+        }
+    }
+
+    private static class Mp4Builder extends DefaultMp4Builder {
+        private final IsoFile isoFile;
+
+        public Mp4Builder(IsoFile isoFile) {
+            this.isoFile = isoFile;
+        }
+
+        @Override
+        public Container build(Movie movie) {
+            Container res =  super.build(movie);
+            res.getBoxes().add(new Box() {
+                @Override
+                public String getType() {
+                    return "wide";
+                }
+
+                @Override
+                public long getSize() {
+                    return 0;
+                }
+
+                @Override
+                public void getBox(WritableByteChannel writableByteChannel) throws IOException {
+
+                }
+            });
+
+            return res;
+        }
+
+        @Override
+        protected ParsableBox createUdta(Movie movie) {
+            return isoFile.getMovieBox().getBoxes(UserDataBox.class).get(0);
+        }
+
+        @Override
+        protected TrackBox createTrackBox(Track track, Movie movie, Map<Track, int[]> chunks) {
+            TrackBox trackBox = super.createTrackBox(track, movie, chunks);
+
+            trackBox.getTrackHeaderBox().setInPoster(true);
+            trackBox.getTrackHeaderBox().setInPreview(true);
+            if (trackBox.getMediaBox().getHandlerBox().getHandlerType().equals(VIDEO_HANDLER_TYPE))
+                trackBox.getMediaBox().getHandlerBox().setName("INS.HVC");
+            else
+                trackBox.getMediaBox().getHandlerBox().setName("INS.AAC");
+
+            return trackBox;
         }
     }
 }
