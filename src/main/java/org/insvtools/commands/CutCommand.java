@@ -45,7 +45,7 @@ public class CutCommand extends AbstractCommand {
         this.groupOfFiles = groupOfFiles;
     }
 
-    String fileExtension(File file) {
+    static String fileExtension(File file) {
         int dotIndex = file.getName().lastIndexOf('.');
         return dotIndex == -1 ? "" : file.getName().substring(dotIndex);
     }
@@ -73,11 +73,16 @@ public class CutCommand extends AbstractCommand {
         }
     }
 
+    File[] listFiles(FileFilter filter) {
+        File dir = mainFile.getAbsoluteFile().getParentFile();
+
+        return dir.listFiles(filter);
+    }
     /**
      * Create map of files to process (input) to cut (output) files.
      */
-    private Map<File, File> filesToProcess() {
-        Pattern insvFilePattern = Pattern.compile("(\\w*)(VID|LRV)_(\\d{8}_\\d{6})_\\d\\d_(\\d+\\.\\w+)");
+    Map<File, File> filesToProcess() {
+        Pattern insvFilePattern = Pattern.compile("(\\w*)(VID|LRV)_(\\d{8}_\\d{6})_\\d\\d_(\\d+)\\.(\\w+)");
 
         Matcher matcher = insvFilePattern.matcher(mainFile.getName());
 
@@ -87,13 +92,15 @@ public class CutCommand extends AbstractCommand {
 
         String prefix = matcher.group(1);
         String dateTime = matcher.group(3);
-        String numExt = matcher.group(4);
+        String num = matcher.group(4);
+        String ext = matcher.group(5);
 
-        File dir = new File(fileName).getAbsoluteFile().getParentFile();
+        if ("insv".equals(ext))
+            ext = "(insv|lrv)";
 
-        Pattern groupPattern = Pattern.compile(prefix + "(VID|LRV)_" + dateTime + "_\\d\\d_" + numExt);
+        Pattern groupPattern = Pattern.compile(prefix + "(VID|LRV)_" + dateTime + "_\\d\\d_" + num + "\\." + ext);
 
-        File[] files = dir.listFiles(f -> groupPattern.matcher(f.getName()).matches());
+        File[] files = listFiles(f -> groupPattern.matcher(f.getName()).matches());
 
         assert files != null; // At least fileName should be found.
 
